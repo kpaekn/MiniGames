@@ -7,11 +7,53 @@
  * @returns {(number|null)[][]}
  */
 export function createGrid(size, rng = Math.random) {
+  const total = size * size;
+
+  // Build a pool with even distribution of 1–9, biasing 5 higher
+  // since 5 can only match with itself (no partner sums to 10).
+  const pool = [];
+  const perValue = Math.floor(total / 10);
+  const fiveCount = total - perValue * 8;
+  for (let v = 1; v <= 9; v++) {
+    const count = v === 5 ? fiveCount : perValue;
+    for (let i = 0; i < count; i++) {
+      pool.push(v);
+    }
+  }
+
+  // Fisher-Yates shuffle
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  // Place values into grid, swapping from the pool to avoid adjacent duplicates
+  let idx = 0;
   const grid = [];
   for (let r = 0; r < size; r++) {
     const row = [];
     for (let c = 0; c < size; c++) {
-      row.push(pickValueAvoidingAdjacents(grid, row, r, c, rng));
+      const left = c > 0 ? row[c - 1] : null;
+      const up = r > 0 ? grid[r - 1][c] : null;
+
+      if (pool[idx] === left || pool[idx] === up) {
+        // Try to find a non-adjacent swap candidate in the remaining pool
+        let swapped = false;
+        for (let k = idx + 1; k < pool.length; k++) {
+          if (pool[k] !== left && pool[k] !== up) {
+            [pool[idx], pool[k]] = [pool[k], pool[idx]];
+            swapped = true;
+            break;
+          }
+        }
+        if (!swapped) {
+          // Fallback: pick any allowed value
+          pool[idx] = pickValueAvoidingAdjacents(grid, row, r, c, rng);
+        }
+      }
+
+      row.push(pool[idx]);
+      idx++;
     }
     grid.push(row);
   }

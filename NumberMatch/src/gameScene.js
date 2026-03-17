@@ -1,108 +1,20 @@
 import { createGrid, canMatch, applyMatch, collapseAndRefill, hasAnyMoves } from './gridLogic.js';
 
-const THEMES = {
-  midnight: {
-    label: 'Midnight',
-    bg: '#020617',
-    hudPrimary: '#e5e7eb',
-    hudSecondary: '#9ca3af',
-    tileFilled: 0x111827,
-    tileEmpty: 0x020617,
-    tileStroke: 0x374151,
-    tileSelectedStroke: 0x60a5fa,
-    overlayBg: 0x020617,
-    overlayStroke: 0x4b5563,
-    buttonBg: 0x111827,
-    buttonStroke: 0x4b5563,
-    text: '#e5e7eb',
-    ghostText: '#6b7280',
-    matchLine: 0x60a5fa,
-  },
-  ocean: {
-    label: 'Ocean',
-    bg: '#061826',
-    hudPrimary: '#e6f6ff',
-    hudSecondary: '#9bd0e3',
-    tileFilled: 0x0b2a3a,
-    tileEmpty: 0x061826,
-    tileStroke: 0x1b4f63,
-    tileSelectedStroke: 0x22d3ee,
-    overlayBg: 0x061826,
-    overlayStroke: 0x1b4f63,
-    buttonBg: 0x0b2a3a,
-    buttonStroke: 0x1b4f63,
-    text: '#e6f6ff',
-    ghostText: '#5ea6bf',
-    matchLine: 0x22d3ee,
-  },
-  sunset: {
-    label: 'Sunset',
-    bg: '#1b1020',
-    hudPrimary: '#ffe7f5',
-    hudSecondary: '#f3a6c8',
-    tileFilled: 0x2a1530,
-    tileEmpty: 0x1b1020,
-    tileStroke: 0x6b2a4f,
-    tileSelectedStroke: 0xfb7185,
-    overlayBg: 0x1b1020,
-    overlayStroke: 0x6b2a4f,
-    buttonBg: 0x2a1530,
-    buttonStroke: 0x6b2a4f,
-    text: '#ffe7f5',
-    ghostText: '#b57497',
-    matchLine: 0xfb7185,
-  },
-  mint: {
-    label: 'Mint',
-    bg: '#061a14',
-    hudPrimary: '#eafff7',
-    hudSecondary: '#86efac',
-    tileFilled: 0x0a2a21,
-    tileEmpty: 0x061a14,
-    tileStroke: 0x145a45,
-    tileSelectedStroke: 0x34d399,
-    overlayBg: 0x061a14,
-    overlayStroke: 0x145a45,
-    buttonBg: 0x0a2a21,
-    buttonStroke: 0x145a45,
-    text: '#eafff7',
-    ghostText: '#5aa38a',
-    matchLine: 0x34d399,
-  },
-  cottonCandy: {
-    label: 'Cotton Candy',
-    bg: '#170a24',
-    hudPrimary: '#fff1fb',
-    hudSecondary: '#f9a8d4',
-    tileFilled: 0x3b1456,
-    tileEmpty: 0x170a24,
-    tileStroke: 0xd946ef,
-    tileSelectedStroke: 0x7dd3fc,
-    overlayBg: 0x170a24,
-    overlayStroke: 0xd946ef,
-    buttonBg: 0x3b1456,
-    buttonStroke: 0xd946ef,
-    text: '#fff1fb',
-    ghostText: '#fbcfe8',
-    matchLine: 0xf472b6,
-  },
-  bubbleGum: {
-    label: 'Bubble Gum',
-    bg: '#13061a',
-    hudPrimary: '#ffe4f2',
-    hudSecondary: '#fda4af',
-    tileFilled: 0x2a0a3a,
-    tileEmpty: 0x13061a,
-    tileStroke: 0xff5ac8,
-    tileSelectedStroke: 0xa78bfa,
-    overlayBg: 0x13061a,
-    overlayStroke: 0xff5ac8,
-    buttonBg: 0x2a0a3a,
-    buttonStroke: 0xff5ac8,
-    text: '#ffe4f2',
-    ghostText: '#f9a8d4',
-    matchLine: 0xff5ac8,
-  },
+const THEME = {
+  bg: '#e8eaed',
+  hudPrimary: '#1a1a2e',
+  hudSecondary: '#4a4a6a',
+  tileFilled: 0xffffff,
+  tileEmpty: 0xe8eaed,
+  tileStroke: 0xb0b4bc,
+  tileSelectedStroke: 0xfbbf24,
+  overlayBg: 0xd0d4dc,
+  overlayStroke: 0x9098a8,
+  buttonBg: 0xc0c4cc,
+  buttonStroke: 0x9098a8,
+  text: '#1a1a2e',
+  ghostText: '#9098a8',
+  matchLine: 0xf59e0b,
 };
 
 /**
@@ -110,13 +22,12 @@ const THEMES = {
  */
 export class GameScene extends Phaser.Scene {
   /**
-   * @param {{ gridSize: number, themeKey?: string }} config
+   * @param {{ gridSize: number }} config
    */
   constructor(config = { gridSize: 9 }) {
     super('GameScene');
     this.gridSize = config.gridSize || 9;
-    this.themeKey = config.themeKey || 'midnight';
-    this.theme = THEMES[this.themeKey] || THEMES.midnight;
+    this.theme = THEME;
 
     /** @type {(number|null)[][]} */
     this.grid = [];
@@ -132,11 +43,11 @@ export class GameScene extends Phaser.Scene {
     this.gridOriginY = 0;
 
     this.score = 0;
+    this.highScore = parseInt(localStorage.getItem('numberMatchHighScore') || '0', 10);
     /** @type {Phaser.GameObjects.Text | null} */
     this.scoreText = null;
-
     /** @type {Phaser.GameObjects.Text | null} */
-    this.instructionsText = null;
+    this.highScoreText = null;
 
     /** @type {Map<string, number>} */
     this.ghostNumbers = new Map();
@@ -146,11 +57,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    this.applyTheme(this.themeKey);
+    this.cameras.main.setBackgroundColor(this.theme.bg);
     const width = /** @type {number} */ (this.game.config.width);
     const height = /** @type {number} */ (this.game.config.height);
 
-    const verticalPadding = 120;
+    const verticalPadding = 60;
     const availableHeight = height - verticalPadding - 40;
     const availableWidth = width - 40;
     this.tileSize = Math.floor(
@@ -162,56 +73,52 @@ export class GameScene extends Phaser.Scene {
 
     this.addHud();
 
+    const gridWidth = this.tileSize * this.gridSize;
+    const gridHeight = this.tileSize * this.gridSize;
+    this.add
+      .rectangle(
+        this.gridOriginX + gridWidth / 2,
+        this.gridOriginY + gridHeight / 2,
+        gridWidth,
+        gridHeight
+      )
+      .setFillStyle()
+      .setStrokeStyle(3, 0xf59e0b)
+      .setDepth(1);
+
     this.grid = createGrid(this.gridSize);
     this.buildGridDisplay();
   }
 
-  applyTheme(themeKey) {
-    this.themeKey = themeKey;
-    this.theme = THEMES[this.themeKey] || THEMES.midnight;
-
-    this.cameras.main.setBackgroundColor(this.theme.bg);
-
-    if (this.scoreText) this.scoreText.setColor(this.theme.hudPrimary);
-    if (this.instructionsText) this.instructionsText.setColor(this.theme.hudSecondary);
-
-    // Repaint existing tiles/ghost text with the new palette
-    if (this.tileContainers && this.tileContainers.length > 0) {
-      this.refreshGridDisplay();
-    }
-  }
-
   addHud() {
     const style = {
-      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      fontFamily: '"DynaPuff", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       fontSize: '20px',
       color: this.theme.hudPrimary,
     };
 
-    this.scoreText = this.add
-      .text(20, 20, 'Score: 0', style)
+    const width = /** @type {number} */ (this.game.config.width);
+
+    this.highScoreText = this.add
+      .text(20, 20, `Best: ${this.highScore}`, { ...style, color: this.theme.hudSecondary })
+      .setOrigin(0, 0)
       .setDepth(10);
 
-    const instructionsStyle = {
-      fontFamily:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      fontSize: '14px',
-      color: this.theme.hudSecondary,
-      wordWrap: { width: /** @type {number} */ (this.game.config.width) - 40 },
-    };
-
-    this.instructionsText = this.add
-      .text(
-        20,
-        72,
-        'Select two numbers in a line: same value or sum to 10. Empty cells between are allowed.',
-        instructionsStyle
-      )
+    this.scoreText = this.add
+      .text(width - 20, 20, 'Score: 0', style)
+      .setOrigin(1, 0)
       .setDepth(10);
   }
 
   updateScore(delta) {
     this.score += delta;
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      localStorage.setItem('numberMatchHighScore', String(this.highScore));
+      if (this.highScoreText) {
+        this.highScoreText.setText(`Best: ${this.highScore}`);
+      }
+    }
     if (this.scoreText) {
       this.scoreText.setText(`Score: ${this.score}`);
       this.tweens.add({
@@ -228,8 +135,9 @@ export class GameScene extends Phaser.Scene {
    * Find any available match on the current grid.
    * @returns {{ a: {row:number,col:number}, b: {row:number,col:number} } | null}
    */
-  findAnyMatch() {
+  findAllMatches() {
     const size = this.gridSize;
+    const matches = [];
     for (let r1 = 0; r1 < size; r1++) {
       for (let c1 = 0; c1 < size; c1++) {
         if (this.grid[r1][c1] == null) continue;
@@ -240,13 +148,19 @@ export class GameScene extends Phaser.Scene {
             if (this.grid[r2][c2] == null) continue;
             const b = { row: r2, col: c2 };
             if (canMatch(this.grid, a, b)) {
-              return { a, b };
+              matches.push({ a, b });
             }
           }
         }
       }
     }
-    return null;
+    return matches;
+  }
+
+  findAnyMatch() {
+    const matches = this.findAllMatches();
+    if (matches.length === 0) return null;
+    return matches[Math.floor(matches.length / 2)];
   }
 
   flashHint() {
@@ -261,31 +175,25 @@ export class GameScene extends Phaser.Scene {
     const containerB = this.tileContainers[b.row]?.[b.col];
     if (!containerA || !containerB) return;
 
-    const rectA = containerA.data.values.rect;
-    const rectB = containerB.data.values.rect;
+    const hintColor = this.theme.tileSelectedStroke;
 
-    const baseStroke = this.theme.tileStroke;
-    const hintStroke = this.theme.tileSelectedStroke;
+    const flash = (container) => {
+      const overlay = this.add
+        .rectangle(0, 0, this.tileSize, this.tileSize, hintColor)
+        .setAlpha(0.85);
+      container.addAt(overlay, container.list.length - 1);
 
-    const pulse = (rect) => {
-      rect.setStrokeStyle(4, hintStroke);
       this.tweens.add({
-        targets: rect,
-        alpha: 0.55,
-        duration: 200,
-        yoyo: true,
-        repeat: 1,
-        ease: 'Sine.easeInOut',
-        onComplete: () => {
-          rect.setAlpha(1);
-          rect.setStrokeStyle(2, baseStroke);
-          this.refreshGridDisplay();
-        },
+        targets: overlay,
+        alpha: 0,
+        duration: 800,
+        ease: 'Linear',
+        onComplete: () => overlay.destroy(),
       });
     };
 
-    pulse(rectA);
-    pulse(rectB);
+    flash(containerA);
+    flash(containerB);
   }
 
   /**
@@ -316,6 +224,60 @@ export class GameScene extends Phaser.Scene {
     oscillator.stop(audioContext.currentTime + durationMs / 1000);
   }
 
+  spawnMatchEffect(cx, cy) {
+    const sq = this.add
+      .rectangle(cx, cy, this.tileSize, this.tileSize, 0xf59e0b)
+      .setDepth(15);
+
+    let exploded = false;
+    this.tweens.add({
+      targets: sq,
+      scaleX: 0,
+      scaleY: 0,
+      alpha: 0,
+      rotation: Math.PI / 2,
+      duration: 500,
+      ease: 'Sine.easeOut',
+      onUpdate: () => {
+        if (!exploded && sq.scaleX <= 0.3) {
+          exploded = true;
+          this.spawnExplosion(cx, cy);
+        }
+      },
+      onComplete: () => sq.destroy(),
+    });
+  }
+
+  spawnExplosion(cx, cy) {
+    const count = 4;
+    const size = this.tileSize * 0.3;
+    const spread = this.tileSize * 0.45;
+
+    for (let i = 0; i < count; i++) {
+      const baseAngle = (Math.PI * 2 / count) * i;
+      const angle = baseAngle + (Math.random() - 0.5) * 0.8;
+      const startRotation = Math.random() * Math.PI;
+      const particle = this.add
+        .rectangle(cx, cy, size, size, 0xf59e0b)
+        .setRotation(startRotation)
+        .setDepth(15);
+
+      const spinDir = Math.random() > 0.5 ? 1 : -1;
+      this.tweens.add({
+        targets: particle,
+        x: cx + Math.cos(angle) * spread,
+        y: cy + Math.sin(angle) * spread,
+        alpha: 0,
+        scaleX: 0,
+        scaleY: 0,
+        rotation: startRotation + spinDir * (Math.PI + Math.random() * Math.PI * 2),
+        duration: 1500,
+        ease: 'Quint.easeOut',
+        onComplete: () => particle.destroy(),
+      });
+    }
+  }
+
   /**
    * @param {number} row
    * @param {number} col
@@ -342,8 +304,8 @@ export class GameScene extends Phaser.Scene {
       .rectangle(
         0,
         0,
-        this.tileSize - 4,
-        this.tileSize - 4,
+        this.tileSize,
+        this.tileSize,
         this.theme.tileFilled
       )
       .setStrokeStyle(1, this.theme.tileStroke);
@@ -352,8 +314,8 @@ export class GameScene extends Phaser.Scene {
     const text = this.add
       .text(0, 0, value != null ? String(value) : '', {
         fontFamily:
-          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        fontSize: `${Math.floor(this.tileSize * 0.45)}px`,
+          '"DynaPuff", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        fontSize: `${Math.floor(this.tileSize * 0.6)}px`,
         color: this.theme.text,
       })
       .setOrigin(0.5);
@@ -434,7 +396,9 @@ export class GameScene extends Phaser.Scene {
           this.selectedCell &&
           this.selectedCell.row === r &&
           this.selectedCell.col === c;
-        rect.setStrokeStyle(2, isSelected ? this.theme.tileSelectedStroke : this.theme.tileStroke);
+        if (value != null) {
+          rect.setFillStyle(isSelected ? this.theme.tileSelectedStroke : this.theme.tileFilled);
+        }
       }
     }
   }
@@ -495,7 +459,7 @@ export class GameScene extends Phaser.Scene {
         scale: 0.95,
         duration: 80,
         yoyo: true,
-        ease: 'Sine.easeInOut',
+        ease: 'Sine.easeOut',
       });
       this.playTone(220, 120);
       this.clearSelection();
@@ -505,9 +469,14 @@ export class GameScene extends Phaser.Scene {
     const containerA = this.tileContainers[a.row][a.col];
     const containerB = this.tileContainers[b.row][b.col];
 
+    this.selectedCell = null;
+
+    this.spawnMatchEffect(containerA.x, containerA.y);
+    this.spawnMatchEffect(containerB.x, containerB.y);
+
     // Draw the connecting line immediately so it feels responsive.
     const lineGraphics = this.add.graphics().setDepth(5);
-    lineGraphics.lineStyle(3, this.theme.matchLine, 0.9);
+    lineGraphics.lineStyle(Math.floor(this.tileSize * 0.25), this.theme.matchLine, 0.9);
     lineGraphics.beginPath();
     lineGraphics.moveTo(containerA.x, containerA.y);
     lineGraphics.lineTo(containerB.x, containerB.y);
@@ -516,43 +485,30 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({
       targets: lineGraphics,
       alpha: 0,
-      duration: 320,
-      delay: 40,
+      duration: 500,
       ease: 'Sine.easeOut',
       onComplete: () => {
         lineGraphics.destroy();
       },
     });
 
-    this.tweens.add({
-      targets: [containerA, containerB],
-      scale: 0.7,
-      alpha: 0.2,
-      duration: 160,
-      ease: 'Sine.easeIn',
-      onComplete: () => {
-        const valueA = this.grid[a.row][a.col];
-        const valueB = this.grid[b.row][b.col];
-        const { didClear } = applyMatch(this.grid, a, b);
-        if (didClear) {
-          // These containers are reused for slide animations; reset visual state
-          // so the "ghost" number doesn't inherit the match fade-out alpha.
-          containerA.setAlpha(1);
-          containerB.setAlpha(1);
-          containerA.setScale(1);
-          containerB.setScale(1);
+    containerA.setVisible(false);
+    containerB.setVisible(false);
 
-          if (valueA != null) this.ghostNumbers.set(`${a.row},${a.col}`, valueA);
-          if (valueB != null) this.ghostNumbers.set(`${b.row},${b.col}`, valueB);
+    const valueA = this.grid[a.row][a.col];
+    const valueB = this.grid[b.row][b.col];
+    const { didClear } = applyMatch(this.grid, a, b);
+    if (didClear) {
+      containerA.setVisible(true);
+      containerB.setVisible(true);
 
-          this.playTone(660, 120);
-          this.updateScore(10);
-          this.animateCollapseIfNeeded();
-        }
-      },
-    });
+      if (valueA != null) this.ghostNumbers.set(`${a.row},${a.col}`, valueA);
+      if (valueB != null) this.ghostNumbers.set(`${b.row},${b.col}`, valueB);
 
-    this.selectedCell = null;
+      this.playTone(660, 120);
+      this.updateScore(10);
+      this.animateCollapseIfNeeded();
+    }
   }
 
   rebuildAfterChange() {
@@ -572,6 +528,10 @@ export class GameScene extends Phaser.Scene {
       if (this.grid[r].every((cell) => cell === null)) {
         emptyRows.push(r);
       }
+    }
+
+    if (emptyRows.length > 0) {
+      this.updateScore(emptyRows.length * size * 10);
     }
 
     // No row collapse: just refill and redraw.
@@ -646,7 +606,7 @@ export class GameScene extends Phaser.Scene {
             x,
             y,
             duration: 220,
-            ease: 'Sine.easeInOut',
+            ease: 'Sine.easeOut',
           })
         );
       }
@@ -676,7 +636,7 @@ export class GameScene extends Phaser.Scene {
             x,
             y,
             duration: 260,
-            ease: 'Sine.easeInOut',
+            ease: 'Sine.easeOut',
           })
         );
       }
@@ -704,63 +664,65 @@ export class GameScene extends Phaser.Scene {
 
     const overlay = this.add.container(width / 2, height / 2).setDepth(20);
 
+    const boxW = width * 0.75;
+    const boxH = 220;
+
     const bg = this.add
-      .rectangle(0, 0, width * 0.7, 160, this.theme.overlayBg)
-      .setStrokeStyle(2, this.theme.overlayStroke)
-      .setAlpha(0.96);
+      .rectangle(0, 0, boxW, boxH, 0xffffff)
+      .setAlpha(0.97);
+
+    const topBar = this.add
+      .rectangle(0, -boxH / 2 + 3, boxW, 6, 0xf59e0b);
+    const bottomBar = this.add
+      .rectangle(0, boxH / 2 - 3, boxW, 6, 0xf59e0b);
+    const leftBorder = this.add
+      .rectangle(-boxW / 2 + 1, 0, 2, boxH, 0xf59e0b);
+    const rightBorder = this.add
+      .rectangle(boxW / 2 - 1, 0, 2, boxH, 0xf59e0b);
 
     const title = this.add
-      .text(0, -40, 'Game Over', {
+      .text(0, -55, 'Game Over', {
         fontFamily:
-          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        fontSize: '26px',
-        color: this.theme.text,
+          '"DynaPuff", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        fontSize: '28px',
+        color: '#1a1a2e',
       })
       .setOrigin(0.5);
 
     const summary = this.add
-      .text(0, 0, `Final score: ${this.score}`, {
+      .text(0, -10, `Final score: ${this.score}`, {
         fontFamily:
-          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        fontSize: '18px',
-        color: this.theme.text,
+          '"DynaPuff", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        fontSize: '20px',
+        color: '#4a4a6a',
       })
       .setOrigin(0.5);
 
-    const buttonContainer = this.add.container(0, 52);
-    const buttonWidth = 160;
-    const buttonHeight = 40;
+    const buttonContainer = this.add.container(0, 55);
+    const buttonWidth = 170;
+    const buttonHeight = 44;
 
     const buttonBg = this.add
-      .rectangle(0, 0, buttonWidth, buttonHeight, this.theme.buttonBg)
-      .setStrokeStyle(1, this.theme.buttonStroke);
+      .rectangle(0, 0, buttonWidth, buttonHeight, 0xf59e0b)
+      .setAlpha(0.95);
 
     const buttonText = this.add
-      .text(0, 0, 'Restart', {
+      .text(0, 0, 'Play Again', {
         fontFamily:
-          'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        fontSize: '16px',
-        color: this.theme.text,
+          '"DynaPuff", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        fontSize: '17px',
+        color: '#ffffff',
       })
       .setOrigin(0.5);
 
-    buttonContainer.add([buttonBg, buttonText]);
-    buttonContainer.setSize(buttonWidth, buttonHeight);
-    buttonContainer.setInteractive(
-      new Phaser.Geom.Rectangle(
-        -buttonWidth / 2,
-        -buttonHeight / 2,
-        buttonWidth,
-        buttonHeight
-      ),
-      Phaser.Geom.Rectangle.Contains
-    );
-
-    buttonContainer.on('pointerdown', () => {
+    buttonBg.setInteractive({ useHandCursor: true });
+    buttonBg.on('pointerdown', () => {
       this.resetGame();
     });
 
-    overlay.add([bg, title, summary, buttonContainer]);
+    buttonContainer.add([buttonBg, buttonText]);
+
+    overlay.add([bg, topBar, bottomBar, leftBorder, rightBorder, title, summary, buttonContainer]);
 
     overlay.setScale(0.8);
     overlay.setAlpha(0);

@@ -2,7 +2,6 @@ import { GameScene } from './gameScene.js';
 
 export function createGame(parentElement, options = {}) {
   const gridSize = options.gridSize || 9;
-  const themeKey = options.themeKey || 'midnight';
 
   const width = 600;
   const height = 700;
@@ -11,9 +10,9 @@ export function createGame(parentElement, options = {}) {
     type: Phaser.AUTO,
     width,
     height,
-    backgroundColor: '#020617',
+    backgroundColor: '#e8eaed',
     parent: parentElement,
-    scene: [new GameScene({ gridSize, themeKey })],
+    scene: [new GameScene({ gridSize })],
     physics: {
       default: 'arcade',
       arcade: {

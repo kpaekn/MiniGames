@@ -4,11 +4,15 @@
     <meta charset="UTF-8" />
     <title>Number Match</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DynaPuff:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL@24,400,1" rel="stylesheet" />
     <!-- Phaser 3 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
     <style>
       :root {
-        --page-bg: radial-gradient(circle at top, #1f2933, #020617);
+        --page-bg: radial-gradient(circle at top, #ffffff, #f0f2f5);
       }
       * {
         box-sizing: border-box;
@@ -17,9 +21,9 @@
       }
       body {
         background: var(--page-bg);
-        color: #e5e7eb;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-          sans-serif;
+        color: #1a1a2e;
+        font-family: 'DynaPuff', system-ui, -apple-system, BlinkMacSystemFont,
+          'Segoe UI', sans-serif;
         display: flex;
         flex-direction: column;
         min-height: 100vh;
@@ -39,7 +43,7 @@
       header p {
         margin-top: 0.35rem;
         font-size: 0.9rem;
-        color: #a0aec0;
+        color: #5a6070;
       }
       #controls {
         display: flex;
@@ -57,19 +61,25 @@
       }
       #controls select,
       #controls button {
-        background: #111827;
+        background: #ffffff;
         border-radius: 999px;
-        border: 1px solid #374151;
-        color: #e5e7eb;
+        border: 1px solid #c0c4cc;
+        color: #1a1a2e;
         padding: 0.35rem 0.85rem;
         cursor: pointer;
         font-size: 0.9rem;
       }
       #controls button {
         font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      #controls button .material-symbols-rounded {
+        font-size: 1.1rem;
       }
       #controls button:hover {
-        background: #1f2937;
+        background: #e8eaed;
       }
       #game-container {
         display: flex;
@@ -82,12 +92,12 @@
       #phaser-root {
         border-radius: 1rem;
         overflow: hidden;
-        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55);
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
       }
       footer {
         padding-bottom: 1rem;
         font-size: 0.75rem;
-        color: #6b7280;
+        color: #8890a0;
         text-align: center;
       }
     </style>
@@ -95,32 +105,25 @@
   <body>
     <header>
       <h1>Number Match</h1>
-      <p>Match equal numbers or pairs summing to 10 along rows, columns, or diagonals.</p>
+      <p>Select two numbers in a line: same value or sum to 10.</p>
     </header>
 
     <div id="controls">
       <label>
         Grid size:
         <select id="grid-size-select">
+          <option value="3">3 × 3</option>
           <option value="5">5 × 5</option>
-          <option value="7" selected>7 × 7</option>
-          <option value="9">9 × 9</option>
+          <option value="7">7 × 7</option>
+          <option value="9" selected>9 × 9</option>
           <option value="11">11 × 11</option>
+          <option value="13">13 × 13</option>
+          <option value="15">15 × 15</option>
+          <option value="17">17 × 17</option>
         </select>
       </label>
-      <label>
-        Theme:
-        <select id="theme-select">
-          <option value="midnight" selected>Midnight</option>
-          <option value="ocean">Ocean</option>
-          <option value="sunset">Sunset</option>
-          <option value="mint">Mint</option>
-          <option value="cottonCandy">Cotton Candy</option>
-          <option value="bubbleGum">Bubble Gum</option>
-        </select>
-      </label>
-      <button id="hint-btn" type="button">Hint</button>
-      <button id="restart-btn">Restart</button>
+      <button id="hint-btn" type="button"><span class="material-symbols-rounded" style="color: #f59e0b;">lightbulb</span> Hint</button>
+      <button id="restart-btn"><span class="material-symbols-rounded">refresh</span> Restart</button>
     </div>
 
     <div id="game-container">
