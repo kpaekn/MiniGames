@@ -1,4 +1,4 @@
-import { createGrid, canMatch, applyMatch, collapseAndRefill, hasAnyMoves } from './gridLogic.js';
+import { createGrid, canMatch, applyMatch, collapseAndRefill, collapseEmptyColumns, hasAnyMoves } from './gridLogic.js';
 
 const THEME = {
   bg: '#e8eaed',
@@ -83,7 +83,7 @@ export class GameScene extends Phaser.Scene {
         gridHeight
       )
       .setFillStyle()
-      .setStrokeStyle(3, 0xf59e0b)
+      .setStrokeStyle(5, 0x000000)
       .setDepth(1);
 
     this.grid = createGrid(this.gridSize);
@@ -519,6 +519,105 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  doColumnCollapse(emptyCols) {
+    const size = this.gridSize;
+    const oldContainers = this.tileContainers;
+
+    // Remap ghost numbers for column shift
+    const nextGhostNumbers = new Map();
+    for (const [key, value] of this.ghostNumbers.entries()) {
+      const [rStr, cStr] = key.split(',');
+      const r = Number(rStr);
+      const c = Number(cStr);
+      if (!Number.isFinite(r) || !Number.isFinite(c)) continue;
+      if (emptyCols.includes(c)) continue;
+      const shiftLeft = emptyCols.filter((ec) => ec < c).length;
+      nextGhostNumbers.set(`${r},${c - shiftLeft}`, value);
+    }
+    this.ghostNumbers = nextGhostNumbers;
+
+    collapseEmptyColumns(this.grid);
+
+    if (this.input) this.input.enabled = false;
+
+    // Destroy containers in empty columns
+    for (const c of emptyCols) {
+      for (let r = 0; r < size; r++) {
+        oldContainers[r]?.[c]?.destroy(true);
+      }
+    }
+
+    const nextContainers = [];
+    const tweens = [];
+
+    // Slide kept columns left
+    for (let r = 0; r < size; r++) {
+      nextContainers[r] = nextContainers[r] || [];
+      let newC = 0;
+      for (let c = 0; c < size; c++) {
+        if (emptyCols.includes(c)) continue;
+        const container = oldContainers[r]?.[c];
+        if (!container) { newC++; continue; }
+
+        const { x, y } = this.getCellCenter(r, newC);
+        container.setData({ ...container.data.values, row: r, col: newC });
+        nextContainers[r][newC] = container;
+
+        tweens.push(
+          this.tweens.add({
+            targets: container,
+            x,
+            y,
+            duration: 220,
+            ease: 'Sine.easeOut',
+          })
+        );
+        newC++;
+      }
+    }
+
+    // Create new columns sliding in from the right
+    const clearedCount = emptyCols.length;
+    const firstNewCol = size - clearedCount;
+    for (let r = 0; r < size; r++) {
+      nextContainers[r] = nextContainers[r] || [];
+      for (let c = firstNewCol; c < size; c++) {
+        const colOffset = c - firstNewCol + 1;
+        const startX =
+          this.gridOriginX +
+          (size - 1 + colOffset) * this.tileSize +
+          this.tileSize / 2;
+
+        const container = this.createTileContainer(r, c, { y: undefined });
+        container.x = startX;
+        nextContainers[r][c] = container;
+
+        const { x, y } = this.getCellCenter(r, c);
+        tweens.push(
+          this.tweens.add({
+            targets: container,
+            x,
+            y,
+            duration: 260,
+            ease: 'Sine.easeOut',
+          })
+        );
+      }
+    }
+
+    this.tileContainers = nextContainers;
+    this.refreshGridDisplay();
+
+    this.time.delayedCall(280, () => {
+      if (this.input) this.input.enabled = true;
+      this.refreshGridDisplay();
+
+      if (!hasAnyMoves(this.grid)) {
+        this.showGameOver();
+      }
+    });
+  }
+
   animateCollapseIfNeeded() {
     const size = this.gridSize;
 
@@ -530,14 +629,33 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // Identify columns that are fully empty.
+    const emptyCols = [];
+    for (let c = 0; c < size; c++) {
+      let allEmpty = true;
+      for (let r = 0; r < size; r++) {
+        if (this.grid[r][c] !== null) { allEmpty = false; break; }
+      }
+      if (allEmpty) emptyCols.push(c);
+    }
+
     if (emptyRows.length > 0) {
       this.updateScore(emptyRows.length * size * 10);
     }
+    if (emptyCols.length > 0) {
+      this.updateScore(emptyCols.length * size * 10);
+    }
 
-    // No row collapse: just refill and redraw.
-    if (emptyRows.length === 0) {
+    // No collapse needed at all.
+    if (emptyRows.length === 0 && emptyCols.length === 0) {
       collapseAndRefill(this.grid);
       this.rebuildAfterChange();
+      return;
+    }
+
+    // Only column collapse needed.
+    if (emptyRows.length === 0) {
+      this.doColumnCollapse(emptyCols);
       return;
     }
 
@@ -647,12 +765,24 @@ export class GameScene extends Phaser.Scene {
     // Ensure visuals reflect the new grid during/after animation.
     this.refreshGridDisplay();
 
-    // Wait for the longest tween to finish, then finalize state.
+    // Wait for the longest tween to finish, then finalize.
     this.time.delayedCall(280, () => {
       if (this.input) this.input.enabled = true;
       this.refreshGridDisplay();
 
-      if (!hasAnyMoves(this.grid)) {
+      // Re-check for empty columns after row collapse.
+      const postCols = [];
+      for (let c = 0; c < size; c++) {
+        let allEmpty = true;
+        for (let r = 0; r < size; r++) {
+          if (this.grid[r][c] !== null) { allEmpty = false; break; }
+        }
+        if (allEmpty) postCols.push(c);
+      }
+      if (postCols.length > 0) {
+        this.updateScore(postCols.length * size * 10);
+        this.doColumnCollapse(postCols);
+      } else if (!hasAnyMoves(this.grid)) {
         this.showGameOver();
       }
     });

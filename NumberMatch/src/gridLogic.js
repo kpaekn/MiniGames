@@ -267,6 +267,43 @@ function nextGridLike(keptRows, newRows) {
 }
 
 /**
+ * Collapse fully empty columns and refill new columns on the right.
+ * Modifies the grid in place.
+ *
+ * @param {(number|null)[][]} grid
+ * @param {() => number} [rng]
+ * @returns {{ clearedCols: number[] }}
+ */
+export function collapseEmptyColumns(grid, rng = Math.random) {
+  const size = grid.length;
+  const emptyCols = [];
+
+  for (let c = 0; c < size; c++) {
+    let allEmpty = true;
+    for (let r = 0; r < size; r++) {
+      if (grid[r][c] !== null) { allEmpty = false; break; }
+    }
+    if (allEmpty) emptyCols.push(c);
+  }
+
+  if (emptyCols.length === 0) return { clearedCols: [] };
+
+  // For each row, remove empty column values and append new ones on the right
+  for (let r = 0; r < size; r++) {
+    const kept = [];
+    for (let c = 0; c < size; c++) {
+      if (!emptyCols.includes(c)) kept.push(grid[r][c]);
+    }
+    while (kept.length < size) {
+      kept.push(1 + Math.floor(rng() * 9));
+    }
+    grid[r] = kept;
+  }
+
+  return { clearedCols: emptyCols };
+}
+
+/**
  * Scan the grid to see if any valid moves remain.
  *
  * @param {(number|null)[][]} grid
