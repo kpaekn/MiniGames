@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Number Match</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Phaser 3 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+    <style>
+      :root {
+        --page-bg: radial-gradient(circle at top, #1f2933, #020617);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--page-bg);
+        color: #e5e7eb;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+          sans-serif;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        align-items: center;
+        justify-content: flex-start;
+      }
+      header {
+        padding: 1rem 1.5rem 0.5rem;
+        text-align: center;
+      }
+      header h1 {
+        font-size: 1.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+      header p {
+        margin-top: 0.35rem;
+        font-size: 0.9rem;
+        color: #a0aec0;
+      }
+      #controls {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 1.5rem 1rem;
+        flex-wrap: wrap;
+        font-size: 0.9rem;
+      }
+      #controls label {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      #controls select,
+      #controls button {
+        background: #111827;
+        border-radius: 999px;
+        border: 1px solid #374151;
+        color: #e5e7eb;
+        padding: 0.35rem 0.85rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      #controls button {
+        font-weight: 600;
+      }
+      #controls button:hover {
+        background: #1f2937;
+      }
+      #game-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 0.5rem 1rem 1.5rem;
+        width: 100%;
+        max-width: 900px;
+      }
+      #phaser-root {
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55);
+      }
+      footer {
+        padding-bottom: 1rem;
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Number Match</h1>
+      <p>Match equal numbers or pairs summing to 10 along rows, columns, or diagonals.</p>
+    </header>
+
+    <div id="controls">
+      <label>
+        Grid size:
+        <select id="grid-size-select">
+          <option value="5">5 × 5</option>
+          <option value="7" selected>7 × 7</option>
+          <option value="9">9 × 9</option>
+          <option value="11">11 × 11</option>
+        </select>
+      </label>
+      <label>
+        Theme:
+        <select id="theme-select">
+          <option value="midnight" selected>Midnight</option>
+          <option value="ocean">Ocean</option>
+          <option value="sunset">Sunset</option>
+          <option value="mint">Mint</option>
+          <option value="cottonCandy">Cotton Candy</option>
+          <option value="bubbleGum">Bubble Gum</option>
+        </select>
+      </label>
+      <button id="hint-btn" type="button">Hint</button>
+      <button id="restart-btn">Restart</button>
+    </div>
+
+    <div id="game-container">
+      <div id="phaser-root"></div>
+    </div>
+
+    <footer>
+      Same number or sum to 10. Cells must align horizontally, vertically or
+      diagonally; empty spaces between are allowed.
+    </footer>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+  </html>
+
